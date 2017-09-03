@@ -1,42 +1,50 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const app = express();
-const cors = require('cors');
-const logger = require('morgan')
-const Student = require('./models/student.js');
-const Teacher = require('./models/teacher.js');
-const routes = require('./routes/routes.js')(Student,Teacher);
 const bodyParser = require('body-parser');
-const port = process.env.PORT || 3000;
-const url = "mongodb://localhost/app";
+const app = express();
+const Mentor = require('./mentor.js');
+const mentorroute = require('./mentorRoutes')(Mentor)
+const Student = require('./student');
+const studentroute = require('./studentRoutes')(Student);
+const path = require('path');
+const cors = require('cors');
+const morgan = require('morgan')
 
-//db connection
+//port and mongodb url
+const port = process.env.PORT || 4000;
+const url ="mongodb://vishnu:vishnu@ds121014.mlab.com:21014/metutu";
+
+//connection to mongodb
 mongoose.connect(url,{
 	useMongoClient:true
-})
+});
 
-var db = mongoose.connection;
-db.on('error',function(){
-	console.log('connection fail')
-})
-.once('open',function(){
-	console.log('connection sucess')
-})
+//get db connection
+const db = mongoose.connection;
 
-//middleware
+//checking connection
+db.on('err',function(){
+	console.log("connectig to db failed")
+}).once('open',function(){
+	console.log('connection to db sucess')
+});
+
+//using middleware
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(bodyParser.json());
 app.use(cors());
-app.use(logger('dev'));
+app.use(morgan('dev'))
 
-app.use('/api',routes)
-
-
+//first route
 app.get('/',function(req,res){
-	res.send("hello")
+	res.sendFile(path.join(__dirname + '/index.html'))
 });
 
+//using routes
+app.use('/api',studentroute);
+app.use('/api',mentorroute)
 
+//starting server
 app.listen(port,function(){
-	console.log('server is running on '+ port)
+	console.log('server is running on port' + port)
 })
